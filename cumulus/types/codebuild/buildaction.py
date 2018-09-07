@@ -47,3 +47,18 @@ class ApprovalAction(troposphere.codepipeline.Actions):
             Provider="Manual"
         )
         self.RunOrder = "1"
+
+class CloudFormationAction(troposphere.codepipeline.Actions):
+    """
+      This class doesn't do much except set the ActionType to reduce code clutter
+    """
+    def __init__(self, **kwargs):
+        super(CloudFormationAction, self).__init__(**kwargs)
+
+        self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
+            Category="Deploy",
+            Owner="AWS",
+            Version="1",
+            Provider="CloudFormation"
+        )
+        self.RunOrder = "1"
