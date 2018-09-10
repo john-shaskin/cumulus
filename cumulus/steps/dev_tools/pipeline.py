@@ -142,6 +142,13 @@ class Pipeline(step.Step):
                         # TODO: restrict more accurately
                         Resource=["*"]
                     ),
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.iam.PassRole
+                        ],
+                        Resource=["*"]
+                    )
                 ],
             )
         )

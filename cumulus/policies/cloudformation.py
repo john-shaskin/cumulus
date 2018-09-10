@@ -54,27 +54,7 @@ def get_policy_cloudformation_general_access(policy_name):
                     ],
                     # TODO: restrict more accurately
                     Resource=["*"]
-                ),
-                awacs.aws.Statement(
-                    Effect=awacs.aws.Allow,
-                    Action=[
-                        awacs.s3.HeadBucket,
-                    ],
-                    Resource=[
-                        '*'
-                    ]
-                ),
-                awacs.aws.Statement(
-                    Effect=awacs.aws.Allow,
-                    Action=[
-                        awacs.aws.Action('ec2', 'Describe*'),
-                    ],
-                    # TODO: restrict more accurately.  What does codebuild need?
-                    Resource=[
-                        "*"
-                    ]
-                ),
-                cumulus.policies.POLICY_VPC_CONFIG
+                )
             ]
         )
     )

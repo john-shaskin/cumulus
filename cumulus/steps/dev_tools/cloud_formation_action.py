@@ -5,7 +5,7 @@ import cumulus.policies
 import cumulus.policies.cloudformation
 import cumulus.types.codebuild.buildaction # TODO: Should the codebuild folder be dev_tools?
 
-from troposphere import iam, codepipeline, Ref, Sub
+from troposphere import iam, codepipeline, Ref, Sub, GetAtt
 from stacker.blueprints.variables.types import CFNString
 from cumulus.chain import step
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
@@ -46,7 +46,6 @@ class CloudFormationAction(step.Step):
         policy_name = "CloudFormationPolicy%stage" % chain_context.instance_name
         role_name = "CloudFormationRole%stage" % self.action_name
 
-        # TODO: Create proper role for Cloudformation deploy
         cloud_formation_role = iam.Role(
             role_name,
             Path="/",
@@ -57,7 +56,7 @@ class CloudFormationAction(step.Step):
                         Action=[awacs.sts.AssumeRole],
                         Principal=awacs.aws.Principal(
                             'Service',
-                            "cloudformation.amazonaws.com"
+                            ["cloudformation.amazonaws.com"]
                         )
                     )]
             ),
@@ -75,11 +74,12 @@ class CloudFormationAction(step.Step):
                 codepipeline.InputArtifacts(Name=self.input_artifact_name)
             ],
             Configuration={
-                'ActionMode': 'CREATE_OR_REPLACE', #TODO: Configurable?
-                'RoleArn': Ref(cloud_formation_role),
+                'ActionMode': 'REPLACE_ON_FAILURE ', #TODO: Configurable?
+                'RoleArn': GetAtt(cloud_formation_role, 'Arn'),
                 'StackName': self.stack_name,
-                'TemplateConfiguration': Sub('TemplateSource::${TemplateConfigurationFileName}'),
-                'TemplatePath': Sub("TemplateSource::${TemplateFileName}")
+                'Capabilities': 'CAPABILITY_NAMED_IAM',
+                'TemplateConfiguration': Sub(self.input_artifact_name + '::${TemplateConfigurationFileName}'),
+                'TemplatePath': Sub(self.input_artifact_name + '::${TemplateFileName}')
             },
             RunOrder="1"
         )
