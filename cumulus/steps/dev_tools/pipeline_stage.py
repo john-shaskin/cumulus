@@ -30,4 +30,4 @@ class PipelineStage(step.Step):
 
         stages.append(pipeline_stage)
 
-        print("Added stage to pipeline %s" % stages.count(stages))
+        print("Added stage '%s' to pipeline %s" % (self.stage_name, stages.count(stages)))

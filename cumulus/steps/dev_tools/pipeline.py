@@ -8,6 +8,7 @@ import awacs.s3
 import awacs.logs
 import awacs.ec2
 import awacs.iam
+import awacs.codecommit
 
 from cumulus.chain import step
 import cumulus.steps.dev_tools
@@ -145,10 +146,21 @@ class Pipeline(step.Step):
                     awacs.aws.Statement(
                         Effect=awacs.aws.Allow,
                         Action=[
+                            awacs.codecommit.GetBranch,
+                            awacs.codecommit.GetCommit,
+                            awacs.codecommit.UploadArchive,
+                            awacs.codecommit.GetUploadArchiveStatus,
+                            awacs.codecommit.CancelUploadArchive
+                        ],
+                        Resource=["*"]
+                    ),                    
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
                             awacs.iam.PassRole
                         ],
                         Resource=["*"]
-                    )
+                    ),
                 ],
             )
         )
@@ -173,8 +185,10 @@ class Pipeline(step.Step):
             ]
         )
 
+
         generic_pipeline = codepipeline.Pipeline(
-            "AppPipeline",
+            "Pipeline",
+            Name=chain_context.instance_name,
             RoleArn=troposphere.GetAtt(pipeline_service_role, "Arn"),
             Stages=[],
             ArtifactStore=codepipeline.ArtifactStore(
