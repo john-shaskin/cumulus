@@ -1,4 +1,3 @@
-import chaincontext  # noqa
 from termcolor import colored
 
 

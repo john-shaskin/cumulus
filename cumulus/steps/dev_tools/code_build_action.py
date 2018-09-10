@@ -48,10 +48,11 @@ class CodeBuildAction(step.Step):
 
     def handle(self, chain_context):
 
-        print("Adding action %stage." % self.action_name)
+        print("Adding action %s Stage." % self.action_name)
+        suffix = "%s%s" %(self.stage_name_to_add, self.action_name)
 
-        policy_name = "CodeBuildPolicy%stage" % chain_context.instance_name
-        role_name = "CodeBuildRole%stage" % self.action_name
+        policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
+        role_name = "CodeBuildRole%s" % suffix
 
         codebuild_role = iam.Role(
             role_name,
@@ -90,7 +91,7 @@ class CodeBuildAction(step.Step):
             chain_context=chain_context,
             codebuild_role=codebuild_role,
             codebuild_environment=self.environment,
-            name=self.action_name,
+            name=self.action_name + suffix,
         )
 
         code_build_action = cumulus.types.codebuild.buildaction.CodeBuildAction(
