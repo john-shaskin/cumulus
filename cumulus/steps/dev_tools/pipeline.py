@@ -188,7 +188,7 @@ class Pipeline(step.Step):
 
         generic_pipeline = codepipeline.Pipeline(
             "Pipeline",
-            Name=chain_context.instance_name,
+            # Name=chain_context.instance_name,
             RoleArn=troposphere.GetAtt(pipeline_service_role, "Arn"),
             Stages=[],
             ArtifactStore=codepipeline.ArtifactStore(

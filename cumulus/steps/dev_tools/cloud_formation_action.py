@@ -14,30 +14,25 @@ from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
 
 class CloudFormationAction(step.Step):
 
-    VARIABLES = {
-        'TemplateFileName': {
-            'type': CFNString,
-            'description': 'Name of the template file, within the input artifact'
-        },
-        'TemplateConfigurationFileName': {
-            'type': CFNString,
-            'description': 'Name of the template configuration file, within the input artifact'
-        }
-    }
-
     def __init__(self,
                  action_name,
                  input_artifact_name,
+                 input_template_file,
+                 input_configuration_file,
                  stage_name_to_add,
-                 stack_name):
+                 stack_name,
+                 action_mode):
         """
         :type action_name: basestring Displayed on the console
         """
         step.Step.__init__(self)
         self.action_name = action_name
         self.input_artifact_name = input_artifact_name
+        self.input_template_file = input_template_file
+        self.input_configuration_file = input_configuration_file
         self.stage_name_to_add = stage_name_to_add
         self.stack_name = stack_name
+        self.action_mode = action_mode
 
     def handle(self, chain_context):
 
@@ -74,12 +69,12 @@ class CloudFormationAction(step.Step):
                 codepipeline.InputArtifacts(Name=self.input_artifact_name)
             ],
             Configuration={
-                'ActionMode': 'REPLACE_ON_FAILURE ', #TODO: Configurable?
+                'ActionMode': self.action_mode.value,
                 'RoleArn': GetAtt(cloud_formation_role, 'Arn'),
                 'StackName': self.stack_name,
                 'Capabilities': 'CAPABILITY_NAMED_IAM',
-                'TemplateConfiguration': Sub(self.input_artifact_name + '::${TemplateConfigurationFileName}'),
-                'TemplatePath': Sub(self.input_artifact_name + '::${TemplateFileName}')
+                'TemplateConfiguration': self.input_artifact_name + "::" + self.input_configuration_file,
+                'TemplatePath': self.input_artifact_name + '::' + self.input_template_file
             },
             RunOrder="1"
         )
