@@ -153,7 +153,7 @@ class Pipeline(step.Step):
                             awacs.codecommit.CancelUploadArchive
                         ],
                         Resource=["*"]
-                    ),                    
+                    ),
                     awacs.aws.Statement(
                         Effect=awacs.aws.Allow,
                         Action=[
@@ -184,7 +184,6 @@ class Pipeline(step.Step):
                 pipeline_policy
             ]
         )
-
 
         generic_pipeline = codepipeline.Pipeline(
             "Pipeline",

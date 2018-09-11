@@ -64,6 +64,7 @@ class ApprovalAction(troposphere.codepipeline.Actions):
         )
         self.RunOrder = "1"
 
+
 class CloudFormationAction(troposphere.codepipeline.Actions):
     """
       This class doesn't do much except set the ActionType to reduce code clutter

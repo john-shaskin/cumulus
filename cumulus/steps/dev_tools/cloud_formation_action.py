@@ -1,15 +1,12 @@
 import awacs
-import troposphere
 
 import cumulus.policies
 import cumulus.policies.cloudformation
-import cumulus.types.codebuild.buildaction # TODO: Should the codebuild folder be dev_tools?
+import cumulus.types.codebuild.buildaction
 
-from troposphere import iam, codepipeline, Ref, Sub, GetAtt
-from stacker.blueprints.variables.types import CFNString
+from troposphere import iam, codepipeline, GetAtt
 from cumulus.chain import step
-from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
-    META_PIPELINE_BUCKET_REF
+from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 
 
 class CloudFormationAction(step.Step):
@@ -80,7 +77,7 @@ class CloudFormationAction(step.Step):
         )
 
         chain_context.template.add_resource(cloud_formation_role)
-        
+
         stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
             template=chain_context.template,
             stage_name=self.stage_name_to_add

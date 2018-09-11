@@ -4,11 +4,9 @@ import awacs.logs
 import awacs.iam
 import awacs.s3
 import awacs.ecr
-# TODO: Remove unnecessary awacs imports
 
 from troposphere import iam
 
-import cumulus
 
 def get_policy_cloudformation_general_access(policy_name):
     # TODO: Return policy with permissions:
