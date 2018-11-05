@@ -7,26 +7,23 @@ from cumulus.steps.ec2 import META_TARGET_GROUP_NAME
 class TargetGroup(step.Step):
 
     def __init__(self,
+                 name,
                  port,
                  vpc_id
                  ):
 
         step.Step.__init__(self)
-
+        self.name = name
         self.port = port
         self.vpc_id = vpc_id
 
     def handle(self, chain_context):
 
-        # todo: why is this not allowing a reference?
-
-        name = '%sTargetGroup' % chain_context.instance_name
-
-        chain_context.metadata[META_TARGET_GROUP_NAME] = name
+        chain_context.metadata[META_TARGET_GROUP_NAME] = self.name
         template = chain_context.template
 
         template.add_resource(alb.TargetGroup(
-            name,
+            self.name,
             HealthCheckPath="/",
             HealthCheckIntervalSeconds="30",
             HealthCheckProtocol="HTTP",

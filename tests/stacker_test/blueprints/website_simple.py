@@ -4,15 +4,13 @@ from stacker.blueprints.variables.types import EC2SubnetIdList, CFNCommaDelimite
 from troposphere import cloudformation, ec2, Ref
 
 from cumulus.chain import chain, chaincontext
+from cumulus.components.userdata.linux import LinuxUserData
 from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule, target_group, dns, \
     alb_port, listener_rule
 
 
 class WebsiteSimple(Blueprint):
     VARIABLES = {
-        'namespace': {
-            'type': CFNString
-        },
         'env': {
             'type': CFNString
         },
@@ -81,17 +79,39 @@ class WebsiteSimple(Blueprint):
         t = self.template
         t.add_description("Acceptance Tests for cumulus scaling groups")
 
-        # TODO fix
-        # instance = self.name + self.context.environment['env']
-        # TODO: give to builder
         the_chain = chain.Chain()
 
         application_port = "8000"
 
-        instance_profile_name = "InstanceProfile" + self.name
+        instance_name = self.context.namespace + "testAlb"
 
-        the_chain.add(launch_config.LaunchConfig(meta_data=self.get_metadata(),
-                                                 vpc_id=Ref("VpcId")))
+        launch_config_name = 'Lc%s' % instance_name
+        asg_name = 'Asg%s' % instance_name
+        ec2_role_name = 'Ec2RoleName%s' % instance_name
+
+        the_chain.add(launch_config.LaunchConfig(launch_config_name=launch_config_name,
+                                                 asg_name=asg_name,
+                                                 ec2_role_name=ec2_role_name,
+                                                 vpc_id=Ref('VpcId'),
+                                                 meta_data=self.get_metadata(),
+                                                 bucket_name=self.context.bucket_name,
+                                                 user_data=LinuxUserData.user_data_for_cfn_init(
+                                                     launch_config_name=launch_config_name,
+                                                     asg_name=asg_name,
+                                                     configsets='default'
+                                                 )))
+
+        the_chain.add(ingress_rule.IngressRule(
+            port_to_open="22",
+            name="TestAlbPort22",
+            cidr="10.0.0.0/8"
+        ))
+
+        the_chain.add(ingress_rule.IngressRule(
+            port_to_open=application_port,
+            name="TestAlbPort8000",
+            cidr="10.0.0.0/8"
+        ))
 
         the_chain.add(block_device_data.BlockDeviceData(ec2.BlockDeviceMapping(
             DeviceName="/dev/xvda",
@@ -101,29 +121,22 @@ class WebsiteSimple(Blueprint):
 
         the_chain.add(target_group.TargetGroup(
             port=application_port,
+            name='%sTargetGroup' % instance_name,
             vpc_id=Ref("VpcId")
         ))
 
-        the_chain.add(scaling_group.ScalingGroup(
-        ))
-
-        the_chain.add(ingress_rule.IngressRule(
-            port_to_open="22",
-            cidr="10.0.0.0/8"
-        ))
-
-        the_chain.add(ingress_rule.IngressRule(
-            port_to_open=application_port,
-            cidr="10.0.0.0/8"
-        ))
+        the_chain.add(scaling_group.ScalingGroup(name=asg_name,
+                                                 launch_config_name=launch_config_name))
 
         the_chain.add(dns.Dns(
+            namespace=self.context.namespace,
             base_domain=Ref("BaseDomain"),
             hosted_zone_id=Ref("AlbCanonicalHostedZoneID"),
             dns_name=Ref("AlbDNSName"),
         ))
 
         the_chain.add(alb_port.AlbPort(
+            name="AlbPortToOpen8000",
             port_to_open=application_port,
             alb_sg_name="AlbSg",
         ))
@@ -137,7 +150,7 @@ class WebsiteSimple(Blueprint):
 
         chain_context = chaincontext.ChainContext(
             template=t,
-            instance_name=instance_profile_name
+            instance_name=instance_name
         )
 
         the_chain.run(chain_context)

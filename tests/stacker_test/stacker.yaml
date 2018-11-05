@@ -49,7 +49,6 @@ stacks:
     variables:
       << : *vpc_variables # yaml parameter expansion syntax
       << : *alb_variables
-      namespace: ${namespace}
       env: ${env}
       ImageName: amazonLinux2
       SshKeyName: stc-admin-March-2017-PLAYPEN

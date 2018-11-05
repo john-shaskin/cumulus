@@ -6,7 +6,6 @@ from troposphere import (
 from troposphere import elasticloadbalancingv2 as alb
 
 CLUSTER_SG_NAME = "%sSG"
-ALB_SG_NAME = "%sAlbSG"
 ALB_NAME = "%sLoadBalancer"
 TARGET_GROUP_DEFAULT = "%sTargetGroup"
 
@@ -14,11 +13,14 @@ TARGET_GROUP_DEFAULT = "%sTargetGroup"
 class Alb(step.Step):
 
     def __init__(self,
+                 alb_security_group_name,
+                 alb_security_group_ingress_name,
                  ):
+        self.alb_security_group_name = alb_security_group_name
+        self.alb_security_group_ingress_name = alb_security_group_ingress_name
         step.Step.__init__(self)
 
     def handle(self, chain_context):
-        print(chain_context.instance_name)
         self.create_conditions(chain_context.template)
         self.create_security_groups(chain_context.template, chain_context.instance_name)
         self.create_default_target_group(chain_context.template, chain_context.instance_name)
@@ -35,39 +37,34 @@ class Alb(step.Step):
             Not(Equals(Ref("ALBCertType"), "acm")))
 
     def create_security_groups(self, template, instance_name):
-        alb_sg = ALB_SG_NAME % instance_name
-
-        # ALB Security group
         template.add_resource(
             ec2.SecurityGroup(
-                alb_sg,
-                GroupDescription=alb_sg,
+                self.alb_security_group_name,
+                GroupDescription=self.alb_security_group_name,
                 VpcId=Ref("VpcId")
             ))
 
         template.add_output(
-            Output("InternalAlbSG", Value=Ref(alb_sg))
+            Output("InternalAlbSG", Value=Ref(self.alb_security_group_name))
         )
 
         # TODO: take a list of Cidr's
         # Allow Internet to connect to ALB
         template.add_resource(ec2.SecurityGroupIngress(
-            "LocalNetworkTo%sAlbPort443" % instance_name,
+            self.alb_security_group_ingress_name,
             IpProtocol="tcp", FromPort="443", ToPort="443",
             CidrIp="10.0.0.0/0",
-            GroupId=Ref(alb_sg),
+            GroupId=Ref(self.alb_security_group_name),
         ))
 
     def create_load_balancer_alb(self, template, instance_name):
         alb_name = ALB_NAME % instance_name
-        alb_sg = ALB_SG_NAME % instance_name
 
         load_balancer = template.add_resource(alb.LoadBalancer(
             alb_name,
-            # Name=alb_name,
             Scheme="internal",
             Subnets=Ref("PrivateSubnets"),
-            SecurityGroups=[Ref(alb_sg)]
+            SecurityGroups=[Ref(self.alb_security_group_name)]
         ))
 
         template.add_output(
@@ -118,7 +115,11 @@ class Alb(step.Step):
         )
 
     def create_default_target_group(self, template, instance_name):
-        print(template.__dict__)
+        """
+
+        :param template:
+        :param instance_name:
+        """
         template.add_resource(alb.TargetGroup(
             TARGET_GROUP_DEFAULT % instance_name,
             Port='80',
