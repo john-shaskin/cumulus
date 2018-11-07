@@ -25,6 +25,11 @@ mappings:
       amazonLinux2: ami-a9d09ed1
 #      ami-31394949
 
+tags:
+    GitVersion: ${GitDescribe}
+    LastDeployedBy: ${User}
+
+
 # The stacks key accepts a list of stack declarations.
 # http://stacker.readthedocs.io/en/latest/config.html#stacks
 stacks:
