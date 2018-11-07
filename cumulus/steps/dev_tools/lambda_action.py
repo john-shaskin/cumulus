@@ -75,10 +75,12 @@ class LambdaAction(step.Step):
             ],
             Configuration={
                 'FunctionName': self.function_name,
-                'UserParameters': self.user_parameters,
             },
             RunOrder="1"
         )
+
+        if self.user_parameters:
+            lambda_action.Configuration['UserParameters'] = self.user_parameters
 
         chain_context.template.add_resource(lambda_role)
 
