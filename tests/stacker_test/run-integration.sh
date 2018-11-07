@@ -2,16 +2,18 @@
 
 #set -x
 ACCOUNT_ID=`aws sts get-caller-identity | jq .Account | tr -d '"' `
-NAMESPACE=acc # must match the namespace in the conf file
-
+NAMESPACE=`whoami`
+NAMESPACE_PARAM="-e namespace=${NAMESPACE}"
 echo "Using account: ${ACCOUNT_ID}"
 
 set -e #Important. Script will exit appropriately if there is an error.
 
-stacker build conf/acceptance.env stacker.yaml --recreate-failed -t --stacks pipelinesimple
+stacker build conf/acceptance.env stacker.yaml --recreate-failed -t \
+    --stacks pipelinesimple ${NAMESPACE_PARAM} \
+    -e GitDescribe=`git describe --always --dirty` -e User=`whoami`
 
-BUCKET_NAME=$(stacker info conf/acceptance.env stacker.yaml 2>&1 | grep PipelineBucket: | cut -f 3 -d " ")
-PIPELINE_NAME=$(stacker info conf/acceptance.env stacker.yaml 2>&1 | grep PipelineName | cut -f 3 -d " ")
+BUCKET_NAME=$(stacker info conf/acceptance.env stacker.yaml ${NAMESPACE_PARAM} 2>&1 | grep PipelineBucket: | cut -f 3 -d " ")
+PIPELINE_NAME=$(stacker info conf/acceptance.env stacker.yaml ${NAMESPACE_PARAM} 2>&1 | grep PipelineName | cut -f 3 -d " ")
 
 ARTIFACT_NAME='artifact.zip'
 TEMP_DIR='ac_build'
@@ -60,12 +62,12 @@ while [ $SECONDS -lt ${end} ]; do
 done
 
 
-SHOULD_DESTROY=false
+SHOULD_DESTROY=true
 if $SHOULD_DESTROY; then
     aws s3 rm s3://${BUCKET_NAME} --recursive
     python delete_bucket_versions.py ${BUCKET_NAME}
 
-    stacker destroy conf/acceptance.env stacker.yaml --force -t
+    stacker destroy conf/acceptance.env stacker.yaml ${NAMESPACE_PARAM} --force -t
 fi
 
 echo "Completing with exit code ${pipeline_result}"
