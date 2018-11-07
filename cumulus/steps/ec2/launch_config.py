@@ -35,25 +35,28 @@ class LaunchConfig(step.Step):
 
         sg_name = "SG%s" % self.asg_name
 
-        template.add_resource(ec2.SecurityGroup(
+        launch_config_security_group = ec2.SecurityGroup(
             sg_name,
             GroupDescription=sg_name,
-            **self._get_security_group_parameters()))
+            **self._get_security_group_parameters()
+        )
 
         chain_context.metadata[META_SECURITY_GROUP_REF] = Ref(sg_name)
 
         user_data = self.user_data
 
-        self._add_instance_profile(chain_context)
+        instance_profile = self._get_instance_profile(chain_context)
 
         launch_config = autoscaling.LaunchConfiguration(
             self.launch_config_name,
             UserData=Base64(user_data),
             Metadata=self.meta_data,
-            IamInstanceProfile=Ref('InstanceProfile%s' % chain_context.instance_name),
+            IamInstanceProfile=Ref(instance_profile),
             **self._get_launch_configuration_parameters(chain_context)
         )
 
+        template.add_resource(instance_profile)
+        template.add_resource(launch_config_security_group)
         template.add_resource(launch_config)
 
     def _get_security_group_parameters(self):
@@ -79,7 +82,7 @@ class LaunchConfig(step.Step):
 
         return parameters
 
-    def _add_instance_profile(self, chain_context):
+    def _get_instance_profile(self, chain_context):
 
         s3readPolicy = iam.Policy(
             PolicyName='S3ReadArtifactBucket',
@@ -117,7 +120,8 @@ class LaunchConfig(step.Step):
             Policies=[s3readPolicy]
         ))
 
-        chain_context.template.add_resource(InstanceProfile(
+        instance_profile = InstanceProfile(
             'InstanceProfile%s' % chain_context.instance_name,
             Roles=[Ref(cfnrole)]
-        ))
+        )
+        return instance_profile

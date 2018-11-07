@@ -8,6 +8,7 @@ from cumulus.chain import step
 class Dns(step.Step):
 
     def __init__(self,
+                 namespace,
                  base_domain,
                  hosted_zone_id,
                  dns_name,
@@ -16,6 +17,7 @@ class Dns(step.Step):
         step.Step.__init__(self)
 
         self.base_domain = base_domain
+        self.namespace = namespace
         self.hosted_zone_id = hosted_zone_id
         self.dns_name = dns_name
 
@@ -37,7 +39,7 @@ class Dns(step.Step):
                         EvaluateTargetHealth=False,
                     ),
                     Name=Join("", [
-                        Ref("namespace"),
+                        self.namespace,
                         "-",
                         Ref("env"),
                         ".",
