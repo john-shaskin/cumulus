@@ -101,12 +101,14 @@ class TestPipelineStep(unittest.TestCase):
     def test_code_build_should_not_add_vpc_config(self):
 
         action = code_build_action.CodeBuildAction(
+            prefix='test',
             action_name="Test",
             stage_name_to_add="the_stage",
             input_artifact_name="no-input",
         )
 
         project = action.create_project(
+            prefix='test',
             chain_context=self.context,
             codebuild_role_arn='dummy-role',
             codebuild_environment=self.environment,
@@ -118,6 +120,7 @@ class TestPipelineStep(unittest.TestCase):
     def test_code_build_should_add_vpc_config(self):
 
         action = code_build_action.CodeBuildAction(
+            prefix='test',
             vpc_config=VpcConfig(
                 vpc_id='dummy-vpc',
                 subnets=[
@@ -130,6 +133,7 @@ class TestPipelineStep(unittest.TestCase):
         )
 
         project = action.create_project(
+            prefix='test',
             chain_context=self.context,
             codebuild_role_arn='dummy-role',
             codebuild_environment=self.environment,

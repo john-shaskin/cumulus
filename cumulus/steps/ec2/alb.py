@@ -5,27 +5,32 @@ from troposphere import (
 )
 from troposphere import elasticloadbalancingv2 as alb
 
-CLUSTER_SG_NAME = "%sSG"
-ALB_NAME = "%sLoadBalancer"
-TARGET_GROUP_DEFAULT = "%sTargetGroup"
+SG_NAME = "%sSecurityGroup"
+ALB_LISTENER = "%sListener"
+ALB_NAME = "LoadBalancer"
+TARGET_GROUP_DEFAULT = "TargetGroup"
 
 
 class Alb(step.Step):
 
     def __init__(self,
-                 alb_security_group_name,
-                 alb_security_group_ingress_name,
+                 prefix,
                  ):
-        self.alb_security_group_name = alb_security_group_name
-        self.alb_security_group_ingress_name = alb_security_group_ingress_name
-        step.Step.__init__(self)
+        """
+
+        :type prefix: basestring prefix to name components uniquely
+        """
+        step.Step.__init__(self, name='Alb')
+        self.prefix = prefix
 
     def handle(self, chain_context):
+        sg_name = self.prefix + SG_NAME % self.name
+
         self.create_conditions(chain_context.template)
-        self.create_security_groups(chain_context.template, chain_context.instance_name)
-        self.create_default_target_group(chain_context.template, chain_context.instance_name)
-        self.create_load_balancer_alb(chain_context.template, chain_context.instance_name)
-        self.add_listener(chain_context.template, chain_context.instance_name)
+        self.create_security_groups(chain_context.template, sg_name)
+        self.create_default_target_group(chain_context.template)
+        self.create_load_balancer_alb(chain_context.template, sg_name)
+        self.add_listener(chain_context.template)
 
     def create_conditions(self, template):
         template.add_condition(
@@ -36,35 +41,40 @@ class Alb(step.Step):
             "UseIAMCert",
             Not(Equals(Ref("ALBCertType"), "acm")))
 
-    def create_security_groups(self, template, instance_name):
+    def create_security_groups(self, template, sg_name):
+
         template.add_resource(
             ec2.SecurityGroup(
-                self.alb_security_group_name,
-                GroupDescription=self.alb_security_group_name,
-                VpcId=Ref("VpcId")
+                sg_name,
+                GroupName=sg_name,
+                GroupDescription=sg_name,
+                VpcId=Ref("VpcId"),
+                Tags=[{'Key': 'Name', 'Value': sg_name}]
             ))
 
         template.add_output(
-            Output("InternalAlbSG", Value=Ref(self.alb_security_group_name))
+            Output("InternalAlbSG", Value=Ref(sg_name))
         )
+
+        sg_ingress_name = "SecurityGroupIngressTo443"
 
         # TODO: take a list of Cidr's
         # Allow Internet to connect to ALB
         template.add_resource(ec2.SecurityGroupIngress(
-            self.alb_security_group_ingress_name,
+            sg_ingress_name,
             IpProtocol="tcp", FromPort="443", ToPort="443",
             CidrIp="10.0.0.0/0",
-            GroupId=Ref(self.alb_security_group_name),
+            GroupId=Ref(sg_name),
         ))
 
-    def create_load_balancer_alb(self, template, instance_name):
-        alb_name = ALB_NAME % instance_name
+    def create_load_balancer_alb(self, template, sg_name):
+        alb_name = ALB_NAME
 
         load_balancer = template.add_resource(alb.LoadBalancer(
             alb_name,
             Scheme="internal",
             Subnets=Ref("PrivateSubnets"),
-            SecurityGroups=[Ref(self.alb_security_group_name)]
+            SecurityGroups=[Ref(sg_name)]
         ))
 
         template.add_output(
@@ -77,7 +87,7 @@ class Alb(step.Step):
             Output("DNSName", Value=load_balancer.GetAtt("DNSName"))
         )
 
-    def add_listener(self, template, instance_name):
+    def add_listener(self, template):
         # Choose proper certificate source ?-> always acm?
         acm_cert = Join("", [
             "arn:aws:acm:",
@@ -92,16 +102,15 @@ class Alb(step.Step):
             ":server-certificate/",
             Ref("ALBCertName")])
         cert_id = If("UseIAMCert", iam_cert, acm_cert)
-        alb_name = ALB_NAME % instance_name
-
+        alb_name = ALB_NAME
         with_ssl = alb.Listener(
-            "Listener",
+            ALB_LISTENER % self.name,
             Port="443",
             Protocol="HTTPS",
             LoadBalancerArn=Ref(alb_name),
             DefaultActions=[alb.Action(
                 Type="forward",
-                TargetGroupArn=Ref(TARGET_GROUP_DEFAULT % instance_name)
+                TargetGroupArn=Ref(TARGET_GROUP_DEFAULT)
             )],
             Certificates=[alb.Certificate(
                 CertificateArn=cert_id
@@ -114,14 +123,14 @@ class Alb(step.Step):
             Output("IAlbListener", Value=with_ssl.Ref())
         )
 
-    def create_default_target_group(self, template, instance_name):
+    def create_default_target_group(self, template):
         """
 
         :param template:
         :param instance_name:
         """
         template.add_resource(alb.TargetGroup(
-            TARGET_GROUP_DEFAULT % instance_name,
+            TARGET_GROUP_DEFAULT,
             Port='80',
             Protocol="HTTP",
             VpcId=Ref("VpcId"),

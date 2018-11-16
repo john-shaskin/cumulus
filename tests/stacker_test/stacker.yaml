@@ -41,6 +41,7 @@ stacks:
       << : *vpc_variables # yaml parameter expansion syntax
       ALBHostName: cumulus-alb-test
       ALBCertName: ${ALBCertName} # INFO: This is a lookup to the .env file or -e cli param (which you won't use right!)
+
   - name: pipelinesimple
     class_path: blueprints.pipeline_simple.PipelineSimple
   - name: scalinggroupsimple

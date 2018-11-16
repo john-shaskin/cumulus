@@ -4,8 +4,9 @@ from stacker.blueprints.variables.types import EC2VPCId, EC2SubnetIdList, CFNCom
 from troposphere import cloudformation, ec2, Ref
 
 from cumulus.chain import chain, chaincontext
-from cumulus.components.userdata.linux import LinuxUserData
 from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule
+
+NAME_SUFFIX = "scalinggroupsimple"
 
 
 class ScalingGroupSimple(Blueprint):
@@ -55,31 +56,16 @@ class ScalingGroupSimple(Blueprint):
         t = self.template
         t.add_description("Acceptance Tests for cumulus scaling groups")
 
-        instance_name = self.context.namespace + "testLinuxInstance"
-
         # TODO: give to builder
         the_chain = chain.Chain()
 
-        launch_config_name = 'Lc%s' % instance_name
-        asg_name = 'Asc%s' % instance_name
-        ec2_role_name = 'Ec2RoleName%s' % instance_name
-
-        the_chain.add(launch_config.LaunchConfig(launch_config_name=launch_config_name,
-                                                 asg_name=asg_name,
-                                                 ec2_role_name=ec2_role_name,
+        the_chain.add(launch_config.LaunchConfig(prefix=NAME_SUFFIX,
                                                  vpc_id=Ref('VpcId'),
                                                  bucket_name=self.context.bucket_name,
-                                                 meta_data=self.get_metadata(),
-                                                 user_data=LinuxUserData.user_data_for_cfn_init(
-                                                     launch_config_name=launch_config_name,
-                                                     asg_name=asg_name,
-                                                     configsets='default')
-                                                 )
-                      )
+                                                 meta_data=self.get_metadata()))
 
         the_chain.add(ingress_rule.IngressRule(
             port_to_open="22",
-            name="JonTestLinuxSshPort22",
             cidr='10.0.0.0/8'
         ))
 
@@ -89,12 +75,10 @@ class ScalingGroupSimple(Blueprint):
                 VolumeSize="40"
             ))))
 
-        the_chain.add(scaling_group.ScalingGroup(name=asg_name,
-                                                 launch_config_name=launch_config_name))
+        the_chain.add(scaling_group.ScalingGroup())
 
         chain_context = chaincontext.ChainContext(
             template=t,
-            instance_name=instance_name
         )
 
         the_chain.run(chain_context)

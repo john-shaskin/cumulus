@@ -9,14 +9,13 @@ class IngressRule(step.Step):
 
     def __init__(self,
                  port_to_open,
-                 name,
                  cidr):
 
-        step.Step.__init__(self)
+        name = 'Port%sIngressRule' % port_to_open
 
+        step.Step.__init__(self, name=name)
         self.port_to_open = port_to_open
         self.cidr = cidr
-        self.name = name
 
     def handle(self, chain_context):
         template = chain_context.template

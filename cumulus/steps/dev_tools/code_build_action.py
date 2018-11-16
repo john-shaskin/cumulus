@@ -21,6 +21,7 @@ from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
 class CodeBuildAction(step.Step):
 
     def __init__(self,
+                 prefix,
                  action_name,
                  stage_name_to_add,
                  input_artifact_name,
@@ -30,6 +31,7 @@ class CodeBuildAction(step.Step):
                  role_arn=None,
                  ):
         """
+        :type prefix: basestring name to make the project unique
         :type buildspec: basestring path to buildspec.yml or text containing the buildspec.
         :type input_artifact_name: basestring The artifact name in the pipeline. Must contain a buildspec.yml
         :type action_name: basestring Displayed on the console
@@ -37,6 +39,7 @@ class CodeBuildAction(step.Step):
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
         """
         step.Step.__init__(self)
+        self.prefix = prefix
         self.role_arn = role_arn
         self.buildspec = buildspec
         self.environment = environment
@@ -75,6 +78,7 @@ class CodeBuildAction(step.Step):
             )
 
         project = self.create_project(
+            prefix=self.prefix,
             chain_context=chain_context,
             codebuild_role_arn=codebuild_role_arn,
             codebuild_environment=self.environment,
@@ -128,7 +132,7 @@ class CodeBuildAction(step.Step):
         )
         return codebuild_role
 
-    def create_project(self, chain_context, codebuild_role_arn, codebuild_environment, name):
+    def create_project(self, chain_context, codebuild_role_arn, codebuild_environment, name, prefix):
 
         artifacts = codebuild.Artifacts(Type='CODEPIPELINE')
 
@@ -156,7 +160,7 @@ class CodeBuildAction(step.Step):
                 SecurityGroupIds=[Ref(sg)],
             )}
 
-        project_name = "Project%s" % name
+        project_name = "%sProject%s" % (prefix, name)
 
         print("Action %s is using buildspec: " % self.action_name)
         print(self.buildspec)
