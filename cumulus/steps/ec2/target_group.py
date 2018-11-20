@@ -7,18 +7,14 @@ from cumulus.steps.ec2 import META_TARGET_GROUP_NAME
 class TargetGroup(step.Step):
 
     def __init__(self,
-                 name,
                  port,
-                 vpc_id
-                 ):
-
-        step.Step.__init__(self)
-        self.name = name
+                 vpc_id, ):
+        step.Step.__init__(self,
+                           name='TargetGroup')
         self.port = port
         self.vpc_id = vpc_id
 
     def handle(self, chain_context):
-
         chain_context.metadata[META_TARGET_GROUP_NAME] = self.name
         template = chain_context.template
 

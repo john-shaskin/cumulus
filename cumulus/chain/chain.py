@@ -3,7 +3,6 @@ from termcolor import colored
 
 from cumulus.chain import chaincontext  # noqa
 from cumulus.chain.params import TemplateRequirements  # noqa
-from cumulus.util.template_query import TemplateQuery  # noqa
 
 
 class Chain:
@@ -54,6 +53,9 @@ class Chain:
             message = ("Template is invalid. Exiting"
                        "all the required params are: ")
             raise AssertionError(message + "\n" + unsatisfied_params)
+
+        if chain_context.instance_name:
+            print(colored('chain_context.instance_name is deprecated', color='red'))
 
     def _execute_all_steps(self, chain_context):
         for step in self._steps:

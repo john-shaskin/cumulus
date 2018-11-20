@@ -5,23 +5,22 @@ from troposphere.policies import UpdatePolicy, AutoScalingReplacingUpdate, AutoS
 from cumulus.chain import step
 from cumulus.steps.ec2 import META_TARGET_GROUP_NAME
 
+LAUNCH_CONFIG_NAME = "LaunchConfig"
+
 
 class ScalingGroup(step.Step):
 
     def __init__(self,
-                 name,
-                 launch_config_name,
                  use_update_policy=True,
                  ):
         """
         :type launch_type: LaunchType: the type of the ec2 that will be created
         """
-        step.Step.__init__(self)
+        step.Step.__init__(self,
+                           name='ScalingGroup')
 
         # Set default resource names for those not injected
-        self.name = name
         self.use_update_policy = use_update_policy
-        self.launch_config_name = launch_config_name
 
     def handle(self, chain_context):
 
@@ -30,7 +29,7 @@ class ScalingGroup(step.Step):
         template.add_resource(autoscaling.AutoScalingGroup(
             self.name,
             **self._get_autoscaling_group_parameters(chain_context=chain_context,
-                                                     launch_config_name=self.launch_config_name)))
+                                                     launch_config_name=LAUNCH_CONFIG_NAME)))
 
     def _get_autoscaling_group_parameters(self, chain_context, launch_config_name):
 
@@ -40,7 +39,7 @@ class ScalingGroup(step.Step):
             'MinSize': Ref("MinSize"),
             'MaxSize': Ref("MaxSize"),
             'VPCZoneIdentifier': Ref("PrivateSubnets"),
-            'Tags': [ASTag('Name', chain_context.instance_name, True)],
+            'Tags': [ASTag('Name', self.name, True)],
         }
 
         if META_TARGET_GROUP_NAME in chain_context.metadata:

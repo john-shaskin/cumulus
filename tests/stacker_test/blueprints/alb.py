@@ -44,16 +44,12 @@ class Alb(Blueprint):
         t = self.template
         t.add_description("Acceptance Tests for cumulus scaling groups")
 
-        instance_name = self.context.namespace + "testAlb"
-
         the_chain = chain.Chain()
 
-        the_chain.add(alb.Alb(alb_security_group_name="%sAlbSg" % instance_name,
-                              alb_security_group_ingress_name="LocalNetworkTo%sAlbPort443" % instance_name))
+        the_chain.add(alb.Alb(prefix="websitesimple"))
 
         chain_context = chaincontext.ChainContext(
             template=t,
-            instance_name=instance_name
         )
 
         the_chain.run(chain_context)

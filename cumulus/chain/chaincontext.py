@@ -5,7 +5,7 @@ class ChainContext:
 
     def __init__(self,
                  template,
-                 instance_name,
+                 instance_name=None,
                  auto_param_creation=True
                  ):
         """

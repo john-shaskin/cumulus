@@ -13,7 +13,7 @@ class ListenerRule(step.Step):
                  host_pattern=None,
                  ):
 
-        step.Step.__init__(self)
+        step.Step.__init__(self, name='AlbListenerRule')
 
         self.path_pattern = path_pattern
         self.host_pattern = host_pattern
@@ -47,10 +47,8 @@ class ListenerRule(step.Step):
         #         ]
         #     )
 
-        name = "%sAlbListenerRule" % chain_context.instance_name
-
         listener_rule = alb.ListenerRule(
-            name,
+            self.name,
             ListenerArn=self.alb_listener_rule,
             Conditions=[routing_condition],
             Actions=[alb.Action(
