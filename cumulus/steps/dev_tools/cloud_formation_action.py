@@ -116,8 +116,8 @@ class CloudFormationAction(step.Step):
         :param chain_context: chaincontext.ChainContext
         :type step_policies: [troposphere.iam.Policy]
         """
-        policy_name = "CloudFormationPolicy%stage" % chain_context.instance_name
-        role_name = "CloudFormationRole%stage" % self.action_name
+        policy_name = "CloudFormationPolicy%sStage" % chain_context.instance_name
+        role_name = "CloudFormationRole%sStage" % self.action_name
 
         all_policies = [
             cumulus.policies.cloudformation.get_policy_cloudformation_general_access(policy_name)

@@ -105,6 +105,7 @@ class TestPipelineStep(unittest.TestCase):
             action_name="Test",
             stage_name_to_add="the_stage",
             input_artifact_name="no-input",
+            stack_namespace="unique-codebuild-project",
         )
 
         project = action.create_project(
@@ -129,7 +130,8 @@ class TestPipelineStep(unittest.TestCase):
             ),
             action_name="testAction",
             stage_name_to_add="thestage",
-            input_artifact_name="test-input"
+            input_artifact_name="test-input",
+            stack_namespace="unique-codebuild-project",
         )
 
         project = action.create_project(

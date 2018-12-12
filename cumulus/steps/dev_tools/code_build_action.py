@@ -7,7 +7,7 @@ import awacs.s3
 import awacs.sts
 import troposphere
 from troposphere import iam, \
-    codebuild, codepipeline, Ref, ec2
+    codebuild, codepipeline, Ref, Sub, ec2
 
 import cumulus.policies
 import cumulus.policies.codebuild
@@ -22,6 +22,7 @@ class CodeBuildAction(step.Step):
 
     def __init__(self,
                  prefix,
+                 stack_namespace,
                  action_name,
                  stage_name_to_add,
                  input_artifact_name,
@@ -37,6 +38,7 @@ class CodeBuildAction(step.Step):
         :type action_name: basestring Displayed on the console
         :type environment: troposphere.codebuild.Environment Optional if you need ENV vars or a different build.
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
+        :type stack_namespace: Stack namespace to generate a unique physical name to give the code build project
         """
         step.Step.__init__(self)
         self.prefix = prefix
@@ -47,6 +49,7 @@ class CodeBuildAction(step.Step):
         self.action_name = action_name
         self.vpc_config = vpc_config
         self.stage_name_to_add = stage_name_to_add
+        self.stack_namespace = stack_namespace
 
     def handle(self, chain_context):
 
@@ -169,7 +172,10 @@ class CodeBuildAction(step.Step):
             project_name,
             Artifacts=artifacts,
             Environment=codebuild_environment,
-            Name="%s-%s" % (chain_context.instance_name, project_name),
+            Name=Sub(['${StackNamespace}-${ProjectName}', {
+                'StackNamespace': self.stack_namespace,
+                'ProjectName': project_name
+            }]),
             ServiceRole=codebuild_role_arn,
             Source=codebuild.Source(
                 "Deploy",
