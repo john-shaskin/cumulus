@@ -96,6 +96,7 @@ phases:
 
         deploy_test = code_build_action.CodeBuildAction(
             prefix="test",
+            stack_namespace="MyPipeline",
             action_name="DeployMyStuff",
             stage_name_to_add=deploy_stage_name,
             input_artifact_name=service_artifact,
@@ -137,6 +138,7 @@ phases:
 
         the_chain.add(code_build_action.CodeBuildAction(
             prefix="test",
+            stack_namespace=troposphere.Ref("StackNameParam"),
             action_name="DestroyService",
             stage_name_to_add=destroy_stage_name,
             input_artifact_name=service_artifact,
